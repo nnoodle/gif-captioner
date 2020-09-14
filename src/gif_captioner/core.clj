@@ -25,6 +25,16 @@
          :on-value-changed {:event/type ::set-delay}
          :value speed})
 
+(defn- progress-view [{:keys [progress]}]
+  (let [p (not (== 1 progress))]
+    {:fx/type :progress-bar
+     :padding {:top 5}
+     :visible p
+     :managed p
+     :max-width Double/MAX_VALUE
+     :min-height 25
+     :progress progress}))
+
 (defn- root-view [{{:keys [caption speed progress] :as state} :state}]
   {:fx/type :stage
    :showing true
@@ -37,20 +47,26 @@
                   :children [{:fx/type :label
                               :text "Caption Text"}
                              {:fx/type :text-area
+                              :v-box/vgrow :sometimes
                               :pref-row-count 5
                               :pref-column-count 20
                               :text caption
                               :on-text-changed {:event/type ::set-caption}
                               :prompt-text "GIF Caption…"}
-                             {:fx/type :label
-                              :text (str "Delay in ms (" speed "ms)")}
-                             {:fx/type slider-view
-                              :speed speed}
+                             {:fx/type :v-box
+                              :spacing 3
+                              :children [{:fx/type :label
+                                          :text (str "Delay in ms (" speed "ms)")}
+                                         {:fx/type slider-view
+                                          :speed speed}]}
                              {:fx/type :h-box
                               :alignment :center-left
                               :spacing 10
                               :padding {:top 5}
                               :children [{:fx/type :button
+                                          :text "Reverse GIF"
+                                          :on-action {:event/type ::reverse-gif}}
+                                         {:fx/type :button
                                           :text "Open GIF"
                                           :on-action {:event/type ::pick-gif
                                                       :mode :open}}
@@ -58,10 +74,9 @@
                                           :text "Export GIF"
                                           :disable (not (== 1 progress))
                                           :on-action {:event/type ::pick-gif
-                                                      :mode :export}}
-                                         {:fx/type :progress-bar
-                                          :visible (not (== 1 progress))
-                                          :progress progress}]}]}}})
+                                                      :mode :export}}]}
+                             {:fx/type progress-view
+                              :progress progress}]}}})
 
 (defmethod event-handler ::pick-gif [{:keys [^ActionEvent fx/event mode]}]
   (let [window (.getWindow (.getScene ^Node (.getTarget event)))
@@ -72,13 +87,19 @@
     (-> picker
         .getExtensionFilters
         (.add (FileChooser$ExtensionFilter. "GIF Files" '("*.gif"))))
+    (when-let [init (:initial-directory @sketch/*state)]
+      (.setInitialDirectory picker init))
     (when-let [file @(fx/on-fx-thread
                       (if (= mode :open)
                         (.showOpenDialog picker window)
                         (.showSaveDialog picker window)))]
+      (swap! sketch/*state assoc :initial-directory (.getParentFile file))
       (if (= mode :open)
         (swap! sketch/*state assoc :gif-file (.getPath file))
         (sketch/create-gif (.getPath file))))))
+
+(defmethod event-handler ::reverse-gif [_]
+  (sketch/reverse-gif! (:gif @sketch/*state)))
 
 (defmethod event-handler ::set-delay [{^Double ms :fx/event}]
   (swap! sketch/*state assoc :speed (Math/round ms)))

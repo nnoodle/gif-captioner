@@ -25,6 +25,13 @@
                          int-array)))
        (first (. d (get gif)))))))
 
+(defn reverse-gif!
+  "Reverse a GIF"
+  [gif]
+  (let [f (.. gif getClass (getDeclaredField "frames"))]
+    (. f (setAccessible true))
+    (. f (set gif (-> (. f (get gif)) reverse into-array)))))
+
 (defn- split-by-text-width
   [strings max-width]
   (if (= (type strings) java.lang.String)
@@ -67,27 +74,24 @@
           (- (.width (:gif state)) (* 2 (:pad state))))))
      (* 2.5 (:pad state))))
 
-(defn- spit-to-tmp
+(defn- get-resource
   "Stupid problems require stupid solutions.
 
   PFont and Gif constructors want filenames and can't read überjar
-  resource urls, so spit them into TMP and read from there."
-  []
+  resource urls, so spit them into tempdir and read them from there."
+  [resource]
   (let [tmpdir (Paths/get (System/getProperty "java.io.tmpdir")
                           (into-array ^String ["gif-captioner"]))
-        tmpdir-str (.toString tmpdir)
-        out-cap-file (.toFile (Paths/get tmpdir-str (into-array ^String ["caption.otf"])))
-        out-gif-file (.toFile (Paths/get tmpdir-str (into-array ^String ["monke.gif"])))]
-    (when-not (Files/exists tmpdir (make-array java.nio.file.LinkOption 0))
-      (.mkdirs (.toFile tmpdir))
-      (with-open [in-cap (io/input-stream (io/resource "caption.otf"))
-                  in-gif (io/input-stream (io/resource "monke.gif"))
-                  out-cap (io/output-stream out-cap-file)
-                  out-gif (io/output-stream out-gif-file)]
-        (io/copy in-cap out-cap)
-        (io/copy in-gif out-gif)))
-    {:font (.getPath out-cap-file)
-     :gif (.getPath out-gif-file)}))
+        out-file (Paths/get (.toString tmpdir)
+                            (into-array ^String [resource]))
+        link-opts (make-array java.nio.file.LinkOption 0)]
+    (when-not (Files/exists tmpdir link-opts)
+      (.mkdirs (.toFile tmpdir)))
+    (when-not (Files/exists out-file link-opts)
+      (with-open [in (io/input-stream (io/resource resource))
+                  out (io/output-stream (.toFile out-file))]
+        (io/copy in out)))
+    (.toString out-file)))
 
 (defn- update-live [state]
   (let [a @*state
@@ -101,8 +105,10 @@
         (let [g (Gif. (quil.applet/current-applet) (:gif-file a))]
           (.loop g)
           (gif-delay g (gif-delay g))
-          (q/text-size (/ (.width g) 10))
           (swap! *state assoc
+                 :pad (/ (.width g) 20)
+                 :font (q/create-font (get-resource "caption.otf")
+                                      (/ (.width g) 10))
                  :gif g
                  :gif-file (:gif-file a)
                  :speed (gif-delay g)))
@@ -120,18 +126,16 @@
   (update state :frames rest))
 
 (defn- setup [initial-gif]
-  (let [files (spit-to-tmp)
-        font (:font files) ;; (.getPath (io/resource "caption.otf"))
-        gif-file (or initial-gif ;; (.getPath (io/resource "monke.gif"))
-                     (:gif files))
+  (let [font (get-resource "caption.otf") ; (.getPath (io/resource "caption.otf"))
+        gif-file (or initial-gif (get-resource "monke.gif")) ; (.getPath (io/resource "monke.gif"))
         gif (Gif. (quil.applet/current-applet) gif-file)]
-    (gif-delay gif (gif-delay gif))     ; regularize gif delays
+    (gif-delay gif (gif-delay gif)) ; regularize gif delays
     (q/frame-rate 50)
     (.loop gif)
     {:caption "POV: you are a yummy banana"
      :speed (gif-delay gif)
-     :pad 25
      :progress 1
+     :pad (/ (.width gif) 20)
      :gif gif
      :gif-file gif-file
      :font (q/create-font font (/ (.width gif) 10))}))
@@ -144,8 +148,7 @@
   (-> (quil.applet/current-applet) .getSurface (.setVisible false))
   (let [export (GifMaker. (quil.applet/current-applet) export-path)
         at @*state
-        state (assoc at
-                     :frames (seq (Gif/getPImages (quil.applet/current-applet) (:gif-file at))))
+        state (assoc at :frames (seq (.getPImages (:gif at))))
         frame (first (:frames state))]
     (.setRepeat export 0)
     (q/text-font (:font state))
@@ -186,7 +189,7 @@
   ([] (sketch-gif nil))
   ([initial-gif]
    (q/sketch ;; gif-captioner
-     :title "GIF Captioner"
+     :title "GIF Preview"
      :size [10 10]
      :setup #(setup-live initial-gif)
      :update update-live

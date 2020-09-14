@@ -1,10 +1,10 @@
-(defproject gif-captioner "0.1.0-SNAPSHOT"
-  :description "make those funny haha gifs that people keep spamming"
+(defproject gif-captioner "0.1.1-SNAPSHOT"
+  :description "make those funny haha gifs that those people keep spamming"
   :url "http://github.com/nnoodle/gif-captioner"
   :license {:name "MIT License"
             :url "https://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [cljfx "1.7.8"]
+                 [cljfx "1.7.8" :exclusions [org.openjfx/javafx-web]]
                  [quil "3.1.0"]
                  [local/gifAnimation "3.0.0"]]
   :repositories {"project" {:url "file:repo"
