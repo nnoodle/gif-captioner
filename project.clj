@@ -7,10 +7,14 @@
                  [cljfx "1.7.8"]
                  [quil "3.1.0"]
                  [local/gifAnimation "3.0.0"]]
-  :repositories {"project" "file:repo"}
+  :repositories {"project" {:url "file:repo"
+                            :checksum :ignore}}
   :main ^:skip-aot gif-captioner.core
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all ;; [gif-captioner.core]
+  :jar-name "gif-captioner.jar"
+  :uberjar-name "gif-captioner-standalone.jar"
+  :clean-targets [:target-path "pom.xml"]
+  :profiles {:uberjar {:aot :all
                        :omit-source true
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"
                                   "-Dcljfx.skip-javafx-initialization=true"]}})

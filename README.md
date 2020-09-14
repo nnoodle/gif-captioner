@@ -2,10 +2,6 @@
 
 simple gif captioning program.
 
-## usage
-
-## compiling
-
 ## managed libraries
 
 - [gifAnimation](https://github.com/extrapixel/gif-animation)

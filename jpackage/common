@@ -1,0 +1,5 @@
+--input target/input
+--dest target/output
+--name "gif-captioner"
+--main-jar gif-captioner-standalone.jar
+--main-class gif_captioner.core

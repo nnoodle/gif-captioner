@@ -10,3 +10,4 @@ pom.xml.asc
 
 /dev
 /*.gif
+!/repo/local/gifAnimation/3.0.0/gifAnimation-3.0.0.jar

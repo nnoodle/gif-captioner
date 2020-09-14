@@ -1,0 +1,88 @@
+name: Build Release Artifacts
+on:
+  release:
+    types: [created]
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '14'
+      - uses: DeLaGuardo/setup-clojure@2.0
+        with:
+          lein: 2.9.1
+      - run: lein uberjar
+      - name: jpackage
+        run: |
+          mkdir target/input
+          mv target/uberjar/gif-captioner-standalone.jar target/input
+          jpackage @jpackage/common --linux-shortcut
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/input/gif-captioner-standalone.jar
+          asset_name: gif-captioner-standalone.jar
+          asset_content_type: application/jar-archive
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/output/gif-captioner_1.0-1_amd64.deb
+          asset_name: gif-captioner_1.0-1_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package
+  build-dmg:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '14'
+      - uses: DeLaGuardo/setup-clojure@2.0
+        with:
+          lein: 2.9.1
+      - run: lein uberjar
+      - name: jpackage
+        run: |
+          mkdir target/input
+          mv target/uberjar/gif-captioner-standalone.jar target/input
+          jpackage @jpackage/common
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/output/gif-captioner-1.0.dmg
+          asset_name: gif-captioner-1.0.dmg
+          asset_content_type: application/x-apple-diskimage
+  build-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '14'
+      - name: install leiningen
+        run: |
+          iwr https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein.bat -OutFile lein.bat
+          .\lein self-install
+      - name: überjar
+        run: .\lein uberjar
+      - name: jpackage
+        shell: powershell
+        run: |
+          mkdir target\input
+          mv target\uberjar\gif-captioner-standalone.jar target\input
+          jpackage @jpackage/common
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: target/output/gif-captioner-1.0.exe
+          asset_name: gif-captioner-1.0.exe
+          asset_content_type: application/vnd.microsoft.portable-executable
