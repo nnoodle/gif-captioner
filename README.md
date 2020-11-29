@@ -1,10 +1,10 @@
 # gif-captioner
 
-simple gif captioning program.
+caption gifs.
 
 ## managed libraries
 
-- [gifAnimation](https://github.com/extrapixel/gif-animation)
+- [gifAnimation](https://github.com/extrapixel/gif-animation) (GPL)
 
 ## to-do
 
@@ -16,4 +16,4 @@ simple gif captioning program.
 
 Copyright © 2020 Noodles!
 
-Licensed under the MIT License.
+Licensed under the GPL License.
