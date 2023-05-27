@@ -1,6 +1,8 @@
 # gif-captioner
 
-caption gifs.
+caption gifs
+
+https://github.com/nnoodle/gif-captioner/assets/28656483/bd9698b6-0caf-41be-b984-8c89e6b8153d
 
 ## managed libraries
 
